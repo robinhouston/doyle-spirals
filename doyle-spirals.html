@@ -72,17 +72,17 @@
     var p = 8, q = 23;
     var root = doyle(p, q);
     
-    var frames_per_iteration = 20;
+    var ms_per_repeat = 300;
     
-    function frame(i) {
+    function frame(t) {
         context.save();
         context.setTransform(1, 0, 0, 1, 0, 0);
         context.clearRect(0, 0, canvas.width, canvas.height);
         
         context.translate(Math.round(canvas.width/2), cy = Math.round(canvas.height/2));
-        var scale = Math.pow(root.mod_a, i/frames_per_iteration);
+        var scale = Math.pow(root.mod_a, t);
         context.scale(scale, scale);
-        context.rotate(root.arg_a * i/frames_per_iteration);
+        context.rotate(root.arg_a * t);
         
         var min_d = 1/scale, max_d = canvas.width * 0.71 / scale;
         var start = root.a;
@@ -96,10 +96,10 @@
         context.restore();
     }
     
-    var frame_index = 0;
-    function loop() {
-        frame(frame_index);
-        frame_index = (frame_index + 1) % (frames_per_iteration*3);
+    var first_timestamp;
+    function loop(timestamp) {
+        if (!first_timestamp) first_timestamp = timestamp;
+        frame(((timestamp - first_timestamp) % (ms_per_repeat*3)) / ms_per_repeat);
         requestAnimationFrame(loop);
     }
     
