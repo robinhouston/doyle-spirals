@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<title>Doyle spirals</title>
+<canvas width=500 height=500></canvas>
+<script>
+    var canvas = document.getElementsByTagName("canvas")[0],
+        context = canvas.getContext("2d");
+    var cx = Math.round(canvas.width/2), cy = Math.round(canvas.height/2), s = 60;
+    function circle(x, y, r) {
+        context.beginPath();
+        context.arc(cx+s*x, cy+s*y, s*r, 0, 7, false);
+        context.fill();
+        context.stroke();
+    }
+    
+    function cmul(w, z) {
+        return [
+            w[0]*z[0] - w[1]*z[1],
+            w[0]*z[1] + w[1]*z[0]
+        ];
+    }
+    function rotate(point, angle) {
+        return cmul(point, [Math.cos(angle), Math.sin(angle)]);
+    }
+    function modulus(p) {
+        return Math.sqrt(p[0]*p[0] + p[1]*p[1]);
+    }
+    
+    var p = [ 49.214586477440868, -112.15764495901659 ], //[ 2.4880455640016077, 0.32059237355663334 ],
+        d = p[0]*p[0] + p[1]*p[1],
+        recip_p = [p[0]/d, -p[1]/d];
+    function spiral(fill_style, n, start_point) {
+        context.save();
+        context.fillStyle = fill_style;
+        _spiral(n, start_point, p);
+        _spiral(n, cmul(start_point, recip_p), recip_p);
+        context.restore();
+    }
+    
+    function _r(x, y) {
+      return Math.sqrt((x-1)*(x-1) + y*y) / (1 + Math.sqrt(x*x + y*y));
+    }
+    function _spiral(n, start_point, ref) {
+        var q = [start_point[0], start_point[1]],
+            r = _r(ref[0], ref[1]);
+        for (var i=0; i<n; i++) {
+            circle(q[0], q[1], modulus(q)*r);
+            q = cmul(ref, q);
+        }
+    }
+    
+    function frame() {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // var q = [-15.131492157411648, 13.360228786197865], // [ 1.352902765031023, -1.151861451720791 ],
+        //     start = [ q[0], q[1] ];
+        // for (var i=0; i<5; i++) {
+        //     spiral("rgba(255,0,0,0.5)", 2, start);
+        //     start = cmul(start, q);
+        // }
+        
+        var r = 0.43384321815784299,
+            w1 = [1.3529027650326957, 1.1518614517313486],
+            z1 = [2.4880455640218013, -0.3205923735433967],
+            w2 = [0.42852288849171788, 0.36484439916610995],
+            z2 = [0.39535772792544582, -0.05094306721172473];
+        circle(1, 0, r);
+        circle(z1[0], z1[1], r*modulus(z1));
+    }
+    
+    function loop() {
+        frame();
+        s *= 1.01;
+        requestAnimationFrame(loop);
+    }
+    //requestAnimationFrame(loop);
+    frame();
+</script>
+<!--
+from __future__ import division
+
+from numpy import (cos, sin, pi, array)
+import scipy.optimize
+
+p, q = 5, 8
+def f(a):
+    z, t = a
+    return array([
+        (z*z - 2*z*cos(t) + 1)*(z**(p/q) + 1)**2 - (z**(p*2/q) - 2*z**(p/q) * cos((p*t+2*pi)/q) + 1)*(z+1)**2,
+        (z*z - 2*z*cos(t) + 1)*(z + z**(p/q))**2 - ((z*cos(t) - z**(p/q) * cos((p*t+2*pi)/q))**2 + (z*sin(t) - z**(p/q) * sin((p*t+2*pi)/q))**2)*(z+1)**2
+    ])
+
+def f2(a):
+    z, t = a
+    return array([
+        (z*z - 2*z*cos(t) + 1)*(z**(5/8) + 1)**2 - (z**(5/8)*z**(5/8) - 2*z**(5/8) * cos((5*t-2*pi)/8) + 1)*(z+1)**2,
+        (z*z - 2*z*cos(t) + 1)*(z + z**(5/8))**2 - ((z*cos(t) - z**(5/8) * cos((5*t-2*pi)/8))**2 + (z*sin(t) - z**(5/8) * sin((5*t-2*pi)/8))**2)*(z+1)**2
+    ])
+
+def f2_jac(a):
+    z, t = a
+    return array([
+        [
+            (5 - 8*z**(3/8) - 18*z**(13/8) + 21*z**2 - 2 (4*z**(3/8) + 13*z + 9*z**(13/8))*cos(t) + (5 + 26*z + 21*z**2)*sin((2*pi + 5*t)/8))/(4*z**(3/8)),
+            (1 + z**(5/8))**2 * 2*z*sin(t) - (5/4)*z**(5/8)*(1+z)**2 * sin((5*t-2*pi)/8)
+        ],
+        [
+            ??,
+            (z + z**(5/8))**2 * 2*z*sin(t)
+        ]
+    ])
+
+result = scipy.optimize.root(f, array([1,1]))
+if not result.success:
+    raise Exception("Numerical optimization failed to converge: " + result.message)
+
+z = result.x
+zz = z[0] * cos(z[1]) + 1j*( z[0] * sin(z[1]) )
+w = array([ z[0]**(5/8), (5*z[1]+2*pi)/8 ])
+ww = w[0] * cos(w[1]) + 1j*( w[0] * sin(w[1]) )
+
+abs(ww-1)/(abs(ww)+1)
+abs(zz-1)/(abs(zz)+1)
+abs(zz-ww)/(abs(zz)+abs(ww))
+
+1/zz
+1/ww
+-->
