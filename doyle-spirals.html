@@ -1,77 +1,97 @@
 <!DOCTYPE html>
 <title>Doyle spirals</title>
-<canvas width=500 height=500></canvas>
+<script src="rAF.js" charset="utf-8"></script>
+<script src="doyle.js" charset="utf-8"></script>
+<canvas width=960 height=500></canvas>
 <script>
+    // Initialisation
     var canvas = document.getElementsByTagName("canvas")[0],
         context = canvas.getContext("2d");
-    var cx = Math.round(canvas.width/2), cy = Math.round(canvas.height/2), s = 60;
+    
+    
+    // Circle drawing
     function circle(x, y, r) {
         context.beginPath();
-        context.arc(cx+s*x, cy+s*y, s*r, 0, 7, false);
+        context.arc(x, y, r, 0, 7, false);
         context.fill();
+        context.lineWidth = r/10;
         context.stroke();
     }
     
+    
+    // Complex arithmetic
     function cmul(w, z) {
         return [
             w[0]*z[0] - w[1]*z[1],
             w[0]*z[1] + w[1]*z[0]
         ];
     }
-    function rotate(point, angle) {
-        return cmul(point, [Math.cos(angle), Math.sin(angle)]);
-    }
     function modulus(p) {
         return Math.sqrt(p[0]*p[0] + p[1]*p[1]);
     }
-    
-    var p = [ 49.214586477440868, -112.15764495901659 ], //[ 2.4880455640016077, 0.32059237355663334 ],
-        d = p[0]*p[0] + p[1]*p[1],
-        recip_p = [p[0]/d, -p[1]/d];
-    function spiral(fill_style, n, start_point) {
-        context.save();
-        context.fillStyle = fill_style;
-        _spiral(n, start_point, p);
-        _spiral(n, cmul(start_point, recip_p), recip_p);
-        context.restore();
+    function crecip(z) {
+        var d = z[0]*z[0] + z[1]*z[1];
+        return [z[0]/d, -z[1]/d];
     }
     
-    function _r(x, y) {
-      return Math.sqrt((x-1)*(x-1) + y*y) / (1 + Math.sqrt(x*x + y*y));
-    }
-    function _spiral(n, start_point, ref) {
-        var q = [start_point[0], start_point[1]],
-            r = _r(ref[0], ref[1]);
-        for (var i=0; i<n; i++) {
-            circle(q[0], q[1], modulus(q)*r);
-            q = cmul(ref, q);
+    
+    // Doyle spiral drawing
+    var min_d = 1, max_d = canvas.width;
+    function spiral(r, start_point, delta) {
+        var recip_delta = crecip(delta),
+            mod_delta = modulus(delta),
+            mod_recip_delta = 1/mod_delta;
+        
+        // Spiral outwards
+        for (var q = start_point, mod_q = modulus(q);
+            mod_q < max_d;
+            q = cmul(q, delta), mod_q *= mod_delta
+        ) {
+            circle(q[0], q[1], mod_q*r);
+        }
+        
+        // Spiral inwards
+        for (var q = cmul(start_point, recip_delta), mod_q = modulus(q);
+            mod_q > min_d;
+            q = cmul(q, recip_delta), mod_q *= mod_recip_delta
+        ) {
+            circle(q[0], q[1], mod_q*r);
         }
     }
     
-    function frame() {
+    
+    // Animation
+    var p = 8, q = 23;
+    var root = doyle(p, q);
+    
+    var frames_per_iteration = 20;
+    
+    function frame(i) {
+        context.save();
+        context.setTransform(1, 0, 0, 1, 0, 0);
         context.clearRect(0, 0, canvas.width, canvas.height);
         
-        // var q = [-15.131492157411648, 13.360228786197865], // [ 1.352902765031023, -1.151861451720791 ],
-        //     start = [ q[0], q[1] ];
-        // for (var i=0; i<5; i++) {
-        //     spiral("rgba(255,0,0,0.5)", 2, start);
-        //     start = cmul(start, q);
-        // }
+        context.translate(Math.round(canvas.width/2), cy = Math.round(canvas.height/2));
+        var scale = Math.pow(root.mod_a, i/frames_per_iteration);
+        context.scale(scale, scale);
+        context.rotate(root.arg_a * i/frames_per_iteration);
         
-        var r = 0.43384321815784299,
-            w1 = [1.3529027650326957, 1.1518614517313486],
-            z1 = [2.4880455640218013, -0.3205923735433967],
-            w2 = [0.42852288849171788, 0.36484439916610995],
-            z2 = [0.39535772792544582, -0.05094306721172473];
-        circle(1, 0, r);
-        circle(z1[0], z1[1], r*modulus(z1));
+        var start = root.a;
+        for (var i=0; i<q; i++) {
+            spiral(root.r, start, root.a);
+            start = cmul(start, root.b);
+        }
+        context.restore();
     }
     
+    var frame_index = 0;
     function loop() {
-        frame();
-        s *= 1.01;
+        frame(frame_index);
+        frame_index = (frame_index + 1) % frames_per_iteration;
         requestAnimationFrame(loop);
     }
-    //requestAnimationFrame(loop);
-    frame();
+    
+    context.strokeStyle = "hsl(228, 10%, 35%)";
+    context.fillStyle = "none";
+    requestAnimationFrame(loop);
 </script>

@@ -1,3 +1,7 @@
+/*   Numerics for Doyle spirals.
+ *   Robin Houston, 2013
+ */
+
 (function() {
     var pow = Math.pow,
         sin = Math.sin,
@@ -116,7 +120,7 @@
                 var v_f = _f(z, t),
                     v_g = _g(z, t);
                 if (-epsilon < v_f && v_f < epsilon && -epsilon < v_g && v_g < epsilon)
-                    return {ok: true, z: z, t: t, r: _r(z,t,0,1)};
+                    return {ok: true, z: z, t: t, r: Math.sqrt(_r(z,t,0,1))};
                 
                 var a = ddz_f(z,t), b = ddt_f(z,t), c = ddz_g(z,t), d = ddt_g(z,t);
                 var det = a*d-b*c;
@@ -132,11 +136,11 @@
         }
         
         var root = find_root(2, 0);
-        if (!root.ok) throw "Failed to find root";
+        if (!root.ok) throw "Failed to find root for p=" + p + ", q=" + q;
         
         var a = [root.z * cos(root.t), root.z * sin(root.t) ],
-            coroot = {z: pow(root.z, p/q), t: (p*root.z+2*pi)/q},
+            coroot = {z: pow(root.z, p/q), t: (p*root.t+2*pi)/q},
             b = [coroot.z * cos(coroot.t), coroot.z * sin(coroot.t) ];
-        return {a: a, b: b, r: root.r};
+        return {a: a, b: b, r: root.r, mod_a: root.z, arg_a: root.t};
     };
 })();
