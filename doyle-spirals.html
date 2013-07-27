@@ -75,7 +75,6 @@
     var ms_per_repeat = 300;
     
     function frame(t) {
-        context.save();
         context.setTransform(1, 0, 0, 1, 0, 0);
         context.clearRect(0, 0, canvas.width, canvas.height);
         
@@ -93,7 +92,6 @@
             });
             start = cmul(start, root.b);
         }
-        context.restore();
     }
     
     var first_timestamp;
