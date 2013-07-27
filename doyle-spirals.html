@@ -36,26 +36,34 @@
     
     
     // Doyle spiral drawing
-    var min_d = 1, max_d = canvas.width;
-    function spiral(r, start_point, delta) {
+    function spiral(r, start_point, delta, options) {
         var recip_delta = crecip(delta),
             mod_delta = modulus(delta),
-            mod_recip_delta = 1/mod_delta;
+            mod_recip_delta = 1/mod_delta,
+            color_index = options.i,
+            colors = options.fill,
+            min_d = options.min_d,
+            max_d = options.max_d;
         
         // Spiral outwards
         for (var q = start_point, mod_q = modulus(q);
             mod_q < max_d;
             q = cmul(q, delta), mod_q *= mod_delta
         ) {
+            context.fillStyle = colors[color_index];
             circle(q[0], q[1], mod_q*r);
+            color_index = (color_index + 1) % colors.length;
         }
         
         // Spiral inwards
+        color_index = ((options ? options.i : 0) + colors.length - 1) % colors.length;
         for (var q = cmul(start_point, recip_delta), mod_q = modulus(q);
             mod_q > min_d;
             q = cmul(q, recip_delta), mod_q *= mod_recip_delta
         ) {
+            context.fillStyle = colors[color_index];
             circle(q[0], q[1], mod_q*r);
+            color_index = (color_index + colors.length - 1) % colors.length;
         }
     }
     
@@ -76,9 +84,13 @@
         context.scale(scale, scale);
         context.rotate(root.arg_a * i/frames_per_iteration);
         
+        var min_d = 1/scale, max_d = canvas.width * 0.71 / scale;
         var start = root.a;
         for (var i=0; i<q; i++) {
-            spiral(root.r, start, root.a);
+            spiral(root.r, start, root.a, {
+                fill: ["#49B", "#483352", "#486078"], i: 2*i%3,
+                min_d: min_d, max_d: max_d
+            });
             start = cmul(start, root.b);
         }
         context.restore();
@@ -87,11 +99,10 @@
     var frame_index = 0;
     function loop() {
         frame(frame_index);
-        frame_index = (frame_index + 1) % frames_per_iteration;
+        frame_index = (frame_index + 1) % (frames_per_iteration*3);
         requestAnimationFrame(loop);
     }
     
-    context.strokeStyle = "hsl(228, 10%, 35%)";
-    context.fillStyle = "none";
+    context.strokeStyle = "white"; //"hsl(228, 10%, 35%)";
     requestAnimationFrame(loop);
 </script>
