@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Test Doyle spiral numerics</title>
+<script src="doyle.js" charset="utf-8"></script>
+<form>
+    p: <input type="text" name="p" value="5">
+    q: <input type="text" name="q" value="8">
+    <input type="submit" name="_" value="Calculate">
+</form>
+<div id="output"></div>
+<script>
+    var form = document.getElementsByTagName("form")[0],
+        output = document.getElementById("output");
+    form.addEventListener("submit", function(e) {
+        e.preventDefault();
+        var p = parseInt(form.elements[0].value),
+            q = parseInt(form.elements[1].value);
+        var d = doyle(p, q);
+        
+        output.innerHTML = "A: (" + d.a[0] + ", " + d.a[1] + ")<br>"
+                         + "B: (" + d.b[0] + ", " + d.b[1] + ")<br>"
+                         + "r: " + d.r;
+    }, false);
+</script>
