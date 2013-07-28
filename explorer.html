@@ -127,6 +127,8 @@ form input { width: 50px; font-size: 18px; }
     if (params.p && params.q) {
         p = p_control.value = parseInt(params.p);
         q = q_control.value = parseInt(params.q);
+        p_control.setAttribute("max", q);
+        q_control.setAttribute("min", Math.max(3, p));
     }
     redisplay();
 </script>
