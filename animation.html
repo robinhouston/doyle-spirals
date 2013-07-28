@@ -69,7 +69,7 @@
     
     
     // Animation
-    var p = 8, q = 23;
+    var p = 9, q = 24;
     var root = doyle(p, q);
     
     var ms_per_repeat = 300;
@@ -83,11 +83,11 @@
         context.scale(scale, scale);
         context.rotate(root.arg_a * t);
         
-        var min_d = 1/scale, max_d = canvas.width * 0.71 / scale;
+        var min_d = 1/scale, max_d = canvas.width * 2;
         var start = root.a;
         for (var i=0; i<q; i++) {
             spiral(root.r, start, root.a, {
-                fill: ["#49B", "#483352", "#486078"], i: 2*i%3,
+                fill: ["#49B", "#483352", "#486078"], i: (2*i)%3,
                 min_d: min_d, max_d: max_d
             });
             start = cmul(start, root.b);
