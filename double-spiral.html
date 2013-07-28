@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Doyle spiral + Möbius transformation = &#x1F632;</title>
+<script src="rAF.js" charset="utf-8"></script>
+<script src="doyle.js" charset="utf-8"></script>
+<canvas width=960 height=500></canvas>
+<script>
+    // Initialisation
+    var canvas = document.getElementsByTagName("canvas")[0],
+        context = canvas.getContext("2d");
+    
+     
+    // Circle drawing and transformation
+    
+    // Möbius transformation that maps (0, 1, ∞) to (-1, 0, 1)
+    function transform_point(x, y) {
+        var denom = (x+1)*(x+1) + y*y;
+        return [ (x*x - 1 + y*y)/denom, 2*y/denom ];
+    }
+    // The image of a circle under the Möbius transformation
+    function transform_circle(x, y, r) {
+        var a = transform_point(x-r, y),
+            b = transform_point(x+r, y),
+            c = transform_point(x, y+r);
+        return circle_through_points(a,b,c);
+    }
+    // The unique circle passing through three non-collinear points
+    function circle_through_points(a, b, c) {
+        var na = a[0]*a[0] + a[1]*a[1],
+            nb = b[0]*b[0] + b[1]*b[1],
+            nc = c[0]*c[0] + c[1]*c[1];
+        var y = (
+            (a[0]-b[0])*(nb-nc) - (b[0]-c[0])*(na-nb)
+        ) / (
+            2*(b[1]-a[1])*(b[0]-c[0]) - 2*(a[0]-b[0])*(c[1]-b[1])
+        ),
+            x = (na-nb + 2*(b[1]-a[1])*y) / (2*(a[0]-b[0])),
+            r = Math.sqrt( (x-a[0])*(x-a[0]) + (y-a[1])*(y-a[1]) );
+        return [x, y, r];
+    }
+    // Draw a circle!
+    function circle(x, y, r) {
+        var c = transform_circle(x, y, r);
+        if (c[2] > 10) return;
+        context.beginPath();
+        context.arc(c[0], c[1], c[2], 0, 7, false);
+        context.fill();
+    }
+    
+    
+    // Complex arithmetic
+    function cmul(w, z) {
+        return [
+            w[0]*z[0] - w[1]*z[1],
+            w[0]*z[1] + w[1]*z[0]
+        ];
+    }
+    function rotate(z, theta) {
+        return cmul(z, [Math.cos(theta), Math.sin(theta)]);
+    }
+    function modulus(p) {
+        return Math.sqrt(p[0]*p[0] + p[1]*p[1]);
+    }
+    function crecip(z) {
+        var d = z[0]*z[0] + z[1]*z[1];
+        return [z[0]/d, -z[1]/d];
+    }
+    
+    
+    // Doyle spiral drawing
+    function spiral(r, start_point, delta, options) {
+        var recip_delta = crecip(delta),
+            mod_delta = modulus(delta),
+            mod_recip_delta = 1/mod_delta,
+            color_index = options.i,
+            colors = options.fill,
+            min_d = options.min_d,
+            max_d = options.max_d;
+        
+        // Spiral outwards
+        for (var q = start_point, mod_q = modulus(q);
+            mod_q < max_d;
+            q = cmul(q, delta), mod_q *= mod_delta
+        ) {
+            context.fillStyle = colors[color_index];
+            circle(q[0], q[1], mod_q*r);
+            color_index = (color_index + 1) % colors.length;
+        }
+        
+        // Spiral inwards
+        color_index = ((options ? options.i : 0) + colors.length - 1) % colors.length;
+        for (var q = cmul(start_point, recip_delta), mod_q = modulus(q);
+            mod_q > min_d;
+            q = cmul(q, recip_delta), mod_q *= mod_recip_delta
+        ) {
+            context.fillStyle = colors[color_index];
+            circle(q[0], q[1], mod_q*r);
+            color_index = (color_index + colors.length - 1) % colors.length;
+        }
+    }
+    
+    
+    // Animation
+    var p = 9, q = 24;
+    var root = doyle(p, q);
+    
+    var ms_per_repeat = 10000;
+    
+    function frame(t) {
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        
+        context.translate(Math.round(canvas.width/2), cy = Math.round(canvas.height/2));
+        context.scale(100, 100);
+        
+        var start = rotate(root.a, Math.PI*2*t);
+        for (var i=0; i<q; i++) {
+            spiral(root.r, start, root.a, {
+                fill: ["#49B", "#483352", "#486078"], i: (2*i)%3,
+                min_d: 1e-3, max_d: 1e3
+            });
+            start = cmul(start, root.b);
+        }
+    }
+    
+    var first_timestamp;
+    function loop(timestamp) {
+        if (!first_timestamp) first_timestamp = timestamp;
+        frame(((timestamp - first_timestamp) % ms_per_repeat) / ms_per_repeat);
+        requestAnimationFrame(loop);
+    }
+    
+    requestAnimationFrame(loop);
+</script>
+
