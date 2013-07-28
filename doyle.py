@@ -1,7 +1,7 @@
 from __future__ import division
 
 import sys
-from math import (cos, sin, pi)
+from math import (cos, sin, pi, sqrt)
 
 def _d(z,t, p,q):
     """The square of the distance between z*e^(it) and z*e^(it)^(p/q).
@@ -75,56 +75,65 @@ def ddt_r(z,t, p,q):
         ) / ( _s(z,t,p,q) )**2
     )
 
+class DoyleSpiral(object):
+    """Result object
+    """
+    def __init__(self, z, t, p, q):
+        w = z**(p/q)
+        s = (p*t + 2*pi)/q
+        
+        self.a = z*cos(t) + z*sin(t)*1j
+        self.b = w*cos(s) + w*sin(s)*1j
+        self.r = sqrt(_r(z,t,0,1))
 
 """We want to find (z, t) such that:
     _r(z,t,0,1) = _r(z,t,p,q) = _r(z**(p/q), (p*t + 2*pi)/q, 0,1)
 """
-p,q = map(int, sys.argv[1:3])
-def _f(z, t):
-    return _r(z,t,0,1) - _r(z,t,p,q)
+def spiral(p, q):
+    def _f(z, t):
+        return _r(z,t,0,1) - _r(z,t,p,q)
 
-def ddz_f(z, t):
-    return ddz_r(z,t,0,1) - ddz_r(z,t,p,q)
+    def ddz_f(z, t):
+        return ddz_r(z,t,0,1) - ddz_r(z,t,p,q)
 
-def ddt_f(z, t):
-    return ddt_r(z,t,0,1) - ddt_r(z,t,p,q)
+    def ddt_f(z, t):
+        return ddt_r(z,t,0,1) - ddt_r(z,t,p,q)
 
-def _g(z, t):
-    return _r(z,t,0,1) - _r(z**(p/q), (p*t + 2*pi)/q, 0,1)
+    def _g(z, t):
+        return _r(z,t,0,1) - _r(z**(p/q), (p*t + 2*pi)/q, 0,1)
 
-def ddz_g(z, t):
-    return ddz_r(z,t,0,1) - ddz_r(z**(p/q), (p*t + 2*pi)/q, 0,1) * (p/q)*z**((p-q)/q)
+    def ddz_g(z, t):
+        return ddz_r(z,t,0,1) - ddz_r(z**(p/q), (p*t + 2*pi)/q, 0,1) * (p/q)*z**((p-q)/q)
 
-def ddt_g(z, t):
-    return ddt_r(z,t,0,1) - ddt_r(z**(p/q), (p*t + 2*pi)/q, 0,1) * (p/q)
+    def ddt_g(z, t):
+        return ddt_r(z,t,0,1) - ddt_r(z**(p/q), (p*t + 2*pi)/q, 0,1) * (p/q)
 
 
-epsilon = 1e-10
-def find_root(z, t):
-    while True:
-        v_f, v_g = _f(z, t), _g(z, t)
-        print "z=%s, t=%s, v_f=%s, v_g=%s" % (z, t, v_f, v_g)
-        if -epsilon < v_f < epsilon and -epsilon < v_g < epsilon:
-            return True, z, t
+    epsilon = 1e-10
+    def find_root(z, t):
+        while True:
+            v_f, v_g = _f(z, t), _g(z, t)
+            # print "z=%s, t=%s, v_f=%s, v_g=%s" % (z, t, v_f, v_g)
+            if -epsilon < v_f < epsilon and -epsilon < v_g < epsilon:
+                return True, z, t
         
-        a,b,c,d = ddz_f(z,t), ddt_f(z,t), ddz_g(z,t), ddt_g(z,t)
-        print "df/dz=%s, df/dt=%s, dg/dz=%s, dg/dt=%s" % (a,b,c,d)
-        det = a*d-b*c
-        print "det=%s" % (det,)
-        if -epsilon < det < epsilon:
-            return False, z, t
+            a,b,c,d = ddz_f(z,t), ddt_f(z,t), ddz_g(z,t), ddt_g(z,t)
+            # print "df/dz=%s, df/dt=%s, dg/dz=%s, dg/dt=%s" % (a,b,c,d)
+            det = a*d-b*c
+            # print "det=%s" % (det,)
+            if -epsilon < det < epsilon:
+                return False, z, t
         
-        delta_z, delta_t = (d*v_f - b*v_g)/det, (a*v_g - c*v_f)/det
-        print "delta_z=%s, delta_t=%s" % (delta_z, delta_t)
-        z -= delta_z
-        t -= delta_t
+            delta_z, delta_t = (d*v_f - b*v_g)/det, (a*v_g - c*v_f)/det
+            # print "delta_z=%s, delta_t=%s" % (delta_z, delta_t)
+            z -= delta_z
+            t -= delta_t
     
-        if z < epsilon:
-            return False, z, t
+            if z < epsilon:
+                return False, z, t
 
-for i in range(1, 100):
-    print "Looking for root from (%d, 0)" % (i,)
-    ok, z, t = find_root(i, 0)
-    if ok:
-        print "z=%s, t=%s" % (z,t)
-        break
+    ok, z, t = find_root(2, 0)
+    if not ok:
+        raise Exception("Failed to find root for p=%d, q=%d" % (p,q))
+    
+    return DoyleSpiral(z, t, p, q)
