@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<title>Doyle spiral explorer</title>
+<script src="rAF.js" charset="utf-8"></script>
+<script src="doyle.js" charset="utf-8"></script>
+<style>
+body { font-family: sans-serif; }
+#container { position: relative; width: 960px; height: 500px; }
+form { position: absolute; left: 804px; top: 0; padding: 8px; width: 140px; }
+form div { margin-bottom: 8px; font-size: 18px; }
+form input { width: 50px; font-size: 18px; }
+</style>
+<div id="container">
+    <canvas width=804 height=500></canvas>
+    <form>
+        <div>Adjust the parameters p and q to change the number of spiral arms:</div>
+        <div>p: <input type="number" name="p" value="8" min="2" max="23"></div>
+        <div>q: <input type="number" name="q" value="23" min="8"></div>
+    </form>
+</div>
+<script>
+    // Initialisation
+    var canvas = document.getElementsByTagName("canvas")[0],
+        context = canvas.getContext("2d");
+    
+    
+    // Circle drawing
+    function circle(x, y, r) {
+        context.beginPath();
+        context.arc(x, y, r, 0, 7, false);
+        context.fill();
+        context.lineWidth = r/10;
+        context.stroke();
+    }
+    
+    
+    // Complex arithmetic
+    function cmul(w, z) {
+        return [
+            w[0]*z[0] - w[1]*z[1],
+            w[0]*z[1] + w[1]*z[0]
+        ];
+    }
+    function modulus(p) {
+        return Math.sqrt(p[0]*p[0] + p[1]*p[1]);
+    }
+    function crecip(z) {
+        var d = z[0]*z[0] + z[1]*z[1];
+        return [z[0]/d, -z[1]/d];
+    }
+    
+    
+    // Doyle spiral drawing
+    function spiral(r, start_point, delta, options) {
+        var recip_delta = crecip(delta),
+            mod_delta = modulus(delta),
+            mod_recip_delta = 1/mod_delta,
+            color_index = options.i,
+            colors = options.fill,
+            min_d = options.min_d,
+            max_d = options.max_d;
+        
+        // Spiral outwards
+        for (var q = start_point, mod_q = modulus(q);
+            mod_q < max_d;
+            q = cmul(q, delta), mod_q *= mod_delta
+        ) {
+            context.fillStyle = colors[color_index];
+            circle(q[0], q[1], mod_q*r);
+            color_index = (color_index + 1) % colors.length;
+        }
+        
+        // Spiral inwards
+        color_index = (options.i + colors.length - 1) % colors.length;
+        for (var q = cmul(start_point, recip_delta), mod_q = modulus(q);
+            mod_q > min_d;
+            q = cmul(q, recip_delta), mod_q *= mod_recip_delta
+        ) {
+            context.fillStyle = colors[color_index];
+            circle(q[0], q[1], mod_q*r);
+            color_index = (color_index + colors.length - 1) % colors.length;
+        }
+    }
+    
+    
+    // Interaction
+    var p = 8, q = 23;
+    function redisplay() {
+        var root = doyle(p, q);
+        
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.translate(Math.round(canvas.width/2), cy = Math.round(canvas.height/2));
+        
+        var start = root.a;
+        for (var i=0; i<q; i++) {
+            spiral(root.r, start, root.a, {
+                fill: ["#49B", "#483352", "#486078"], i: (2*i)%3,
+                min_d: 1, max_d: canvas.width * 3
+            });
+            start = cmul(start, root.b);
+        }
+    }
+    
+    context.strokeStyle = "rgba(0,0,0,0)";
+    
+    var params = {};
+    (function (query, re, match) {
+        while (match = re.exec(query)) {
+            params[decodeURIComponent(match[1])] = decodeURIComponent(match[2]);
+        }
+    })(window.location.search.substring(1).replace(/\+/g, "%20"), /([^&=]+)=?([^&]*)/g);
+    
+    var form = document.getElementsByTagName("form")[0],
+        p_control = form.elements[0],
+        q_control = form.elements[1];
+    p_control.addEventListener("change", function(e) {
+        p = this.value;
+        q_control.setAttribute("min", Math.max(3, p));
+        redisplay();
+    }, false);
+    q_control.addEventListener("change", function(e) {
+        q = this.value;
+        p_control.setAttribute("max", q);
+        redisplay();
+    }, false);
+    
+    if (params.p && params.q) {
+        p = p_control.value = parseInt(params.p);
+        q = q_control.value = parseInt(params.q);
+    }
+    redisplay();
+</script>
